@@ -1,3 +1,6 @@
-DATABASE_URL = "postgresql://postgres:password@localhost/malware_db"
-SECRET_KEY = "SUPER_SECRET_KEY_CHANGE_THIS"
-ALGORITHM = "HS256"
+import os
+
+DB_PATH    = os.environ.get("DB_PATH", "malware.db")
+
+SECRET_KEY = os.environ.get("SECRET_KEY", "change-this-in-production")
+ALGORITHM  = "sha256"

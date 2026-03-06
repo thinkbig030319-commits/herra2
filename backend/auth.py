@@ -1,38 +1,59 @@
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
-from passlib.hash import bcrypt
-from sqlalchemy.orm import Session
-from .database import SessionLocal
-from .models import User
-from .config import SECRET_KEY, ALGORITHM
+import hashlib
+import hmac
+import base64
+import json
+import os
+import time
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+from .config import SECRET_KEY
+from .database import get_db
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def _hash_password(password: str) -> str:
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000)
+    return salt.hex() + ":" + key.hex()
 
-def create_token(data: dict):
-    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+def _verify_password(password: str, stored: str) -> bool:
+    salt_hex, key_hex = stored.split(":", 1)
+    salt = bytes.fromhex(salt_hex)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000)
+    return hmac.compare_digest(key.hex(), key_hex)
 
-def verify_token(token: str):
-    try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid Token")
+def create_token(data: dict, expires_in: int = 3600) -> str:
+    payload = {**data, "exp": time.time() + expires_in}
+    payload_b64 = base64.urlsafe_b64encode(
+        json.dumps(payload).encode()
+    ).rstrip(b"=").decode()
+    sig = hmac.new(SECRET_KEY.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
+    return f"{payload_b64}.{sig}"
 
-def register_user(username: str, password: str, db: Session):
-    hashed = bcrypt.hash(password)
-    user = User(username=username, password=hashed)
-    db.add(user)
-    db.commit()
+def verify_token(token: str) -> dict:
+    parts = token.split(".")
+    if len(parts) != 2:
+        raise ValueError("Invalid token format")
+    payload_b64, sig = parts
+    expected = hmac.new(SECRET_KEY.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, expected):
+        raise ValueError("Invalid token signature")
+    padding = "=" * (-len(payload_b64) % 4)
+    payload = json.loads(base64.urlsafe_b64decode(payload_b64 + padding))
+    if payload.get("exp", 0) < time.time():
+        raise ValueError("Token expired")
+    return payload
 
-def login_user(username: str, password: str, db: Session):
-    user = db.query(User).filter(User.username == username).first()
-    if not user or not bcrypt.verify(password, user.password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+def register_user(username: str, password: str):
+    hashed = _hash_password(password)
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            (username, hashed),
+        )
+
+def login_user(username: str, password: str) -> str:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT password FROM users WHERE username = ?", (username,)
+        ).fetchone()
+    if not row or not _verify_password(password, row["password"]):
+        raise ValueError("Invalid credentials")
     return create_token({"sub": username})
