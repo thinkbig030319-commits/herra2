@@ -6,20 +6,28 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="container">
+    <h1>🛡 Malware Detection System</h1>
 
-    <div class="container">
-        <h1>🛡 Malware Detection System</h1>
-
-        <div class="card">
-            <h2>Scan a File</h2>
-
-            <input type="file" id="fileInput">
-            <button onclick="scanFile()">Scan File</button>
-
-            <div id="result"></div>
-        </div>
+    <!-- Auth Card -->
+    <div class="card" id="authCard">
+        <h2>Login / Register</h2>
+        <input type="text" id="username" placeholder="Username"><br>
+        <input type="password" id="password" placeholder="Password"><br>
+        <button onclick="login()">Login</button>
+        <button onclick="register()">Register</button>
+        <div id="authResult"></div>
     </div>
 
+    <!-- Scan Card (hidden until logged in) -->
+    <div class="card" id="scanCard" style="display:none;">
+        <h2>Scan a File</h2>
+        <input type="file" id="fileInput">
+        <button onclick="scanFile()">Scan File</button>
+        <button onclick="logout()" style="background:#c0392b; margin-left:10px;">Logout</button>
+        <div id="result"></div>
+    </div>
+</div>
 <script src="script.js"></script>
 </body>
 </html>

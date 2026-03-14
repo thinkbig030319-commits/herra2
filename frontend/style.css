@@ -1,46 +1,7 @@
-body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(to right, #1e3c72, #2a5298);
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    text-align: center;
-    padding: 50px;
-}
-
-h1 {
-    color: white;
-}
-
-.card {
-    background: white;
-    padding: 30px;
-    margin: auto;
-    width: 400px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-input {
-    margin: 15px 0;
-}
-
-button {
-    padding: 10px 20px;
-    background: #2a5298;
-    color: white;
-    border: none;
+input[type="text"], input[type="password"] {
+    width: 80%;
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
     border-radius: 5px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #1e3c72;
-}
-
-#result {
-    margin-top: 20px;
-    font-weight: bold;
 }

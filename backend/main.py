@@ -2,6 +2,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 import json
 import os
+import mimetypes
 
 from .database import init_db, get_db
 from .auth import register_user, login_user
@@ -76,8 +77,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/stats":
-            # Replaces the socketio broadcast — clients poll this endpoint.
             self.send_json(200, get_system_stats())
+            return
+
+        # Serve static frontend files
+        # Map "/" to index.html
+        static_path = self.path.lstrip("/") or "index.html"
+        file_path = os.path.join("frontend", static_path)
+
+        if os.path.isfile(file_path):
+            mime_type, _ = mimetypes.guess_type(file_path)
+            mime_type = mime_type or "application/octet-stream"
+            with open(file_path, "rb") as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", mime_type)
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
         else:
             self.send_json(404, {"error": "Not found"})
 
