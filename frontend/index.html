@@ -1,33 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Malware Detection System</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL — Malware Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-    <h1>🛡 Malware Detection System</h1>
 
-    <!-- Auth Card -->
-    <div class="card" id="authCard">
-        <h2>Login / Register</h2>
-        <input type="text" id="username" placeholder="Username"><br>
-        <input type="password" id="password" placeholder="Password"><br>
-        <button onclick="login()">Login</button>
-        <button onclick="register()">Register</button>
-        <div id="authResult"></div>
-    </div>
+<canvas id="matrixCanvas"></canvas>
+<div class="scanlines"></div>
 
-    <!-- Scan Card (hidden until logged in) -->
-    <div class="card" id="scanCard" style="display:none;">
-        <h2>Scan a File</h2>
-        <input type="file" id="fileInput">
-        <button onclick="scanFile()">Scan File</button>
-        <button onclick="logout()" style="background:#c0392b; margin-left:10px;">Logout</button>
-        <div id="result"></div>
-    </div>
+<!-- HUD corners -->
+<div class="hud hud-tl">
+  <div class="corner-bracket tl"></div>
+  <span class="hud-tag">● SYS:ONLINE</span>
 </div>
+<div class="hud hud-tr">
+  <div class="corner-bracket tr"></div>
+  <span class="hud-tag" id="hudClock">00:00:00</span>
+</div>
+<div class="hud hud-bl">
+  <div class="corner-bracket bl"></div>
+  <span class="hud-tag">ENC:AES-256</span>
+</div>
+<div class="hud hud-br">
+  <div class="corner-bracket br"></div>
+  <span class="hud-tag" id="hudThreat">THREAT:LOW</span>
+</div>
+
+<!-- Ticker -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="g">● FIREWALL ACTIVE</span> &nbsp;◆&nbsp;
+    <span class="c">IDS MONITORING</span> &nbsp;◆&nbsp;
+    <span class="p">ZERO THREATS DETECTED</span> &nbsp;◆&nbsp;
+    <span class="a">ENCRYPTION VERIFIED</span> &nbsp;◆&nbsp;
+    <span class="g">SYSTEM INTEGRITY OK</span> &nbsp;◆&nbsp;
+    <span class="c">MALWARE DB UPDATED</span> &nbsp;◆&nbsp;
+    <span class="p">AI ENGINE READY</span> &nbsp;◆&nbsp;
+    <span class="g">● FIREWALL ACTIVE</span> &nbsp;◆&nbsp;
+    <span class="c">IDS MONITORING</span> &nbsp;◆&nbsp;
+    <span class="p">ZERO THREATS DETECTED</span> &nbsp;◆&nbsp;
+    <span class="a">ENCRYPTION VERIFIED</span> &nbsp;◆&nbsp;
+    <span class="g">SYSTEM INTEGRITY OK</span> &nbsp;◆&nbsp;
+    <span class="c">MALWARE DB UPDATED</span> &nbsp;◆&nbsp;
+    <span class="p">AI ENGINE READY</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ══ AUTH VIEW ══ -->
+  <div id="authView" class="view active">
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-icon-ring">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="shield-svg">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M32 4L56 16v20c0 13-10 22-24 24C10 58 0 49 0 36V16z" stroke="url(#grd)" stroke-width="2.5" fill="none" transform="translate(4,0)"/>
+            <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="22" fill="url(#grd)" font-family="Share Tech Mono">✦</text>
+            <defs>
+              <linearGradient id="grd" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00ff88"/>
+                <stop offset="50%" stop-color="#00cfff"/>
+                <stop offset="100%" stop-color="#b400ff"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+      <h1 class="brand-title">
+        <span class="g">S</span><span class="c">E</span><span class="p">N</span><span class="g">T</span><span class="c">I</span><span class="p">N</span><span class="g">E</span><span class="c">L</span>
+      </h1>
+      <p class="brand-sub">MALWARE DETECTION &amp; ANALYSIS SYSTEM</p>
+      <div class="brand-status">
+        <span class="pulse-dot"></span>
+        <span id="typewriter" class="g"></span>
+      </div>
+      <div class="brand-badges">
+        <div class="badge green-badge"><span>99.8%</span><small>ACCURACY</small></div>
+        <div class="badge-sep"></div>
+        <div class="badge cyan-badge"><span>1.2M+</span><small>SIGNATURES</small></div>
+        <div class="badge-sep"></div>
+        <div class="badge purple-badge"><span>AI</span><small>POWERED</small></div>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card" id="authCard">
+      <div class="card-rainbow"></div>
+      <div class="card-topbar">
+        <span class="dot dr"></span><span class="dot da"></span><span class="dot dg"></span>
+        <span class="topbar-title">AUTH_TERMINAL v2.1</span>
+        <div class="sig"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="card-body">
+
+        <div class="tabs">
+          <button class="tab active" id="tLogin" onclick="switchTab('login')">
+            <span class="tab-dot g">⬡</span> LOGIN
+          </button>
+          <button class="tab" id="tReg" onclick="switchTab('register')">
+            <span class="tab-dot p">⬡</span> REGISTER
+          </button>
+          <div class="tab-pill" id="tabPill"></div>
+        </div>
+
+        <div class="field">
+          <label><span class="c">▸</span> USERNAME</label>
+          <div class="fi">
+            <input type="text" id="username" placeholder="Enter identifier" autocomplete="off" onkeydown="ke(event)">
+            <div class="fi-line"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label><span class="p">◆</span> PASSWORD</label>
+          <div class="fi">
+            <input type="password" id="password" placeholder="Enter passkey" onkeydown="ke(event)">
+            <button class="eye" onclick="togPw(this)" tabindex="-1">👁</button>
+            <div class="fi-line"></div>
+          </div>
+        </div>
+
+        <button class="btn-submit" id="submitBtn" onclick="doSubmit()">
+          <span id="submitLbl">⟶ &nbsp;AUTHENTICATE</span>
+        </button>
+
+        <div id="authResult" class="msg"></div>
+      </div>
+    </div>
+
+  </div><!-- /authView -->
+
+  <!-- ══ SCAN VIEW ══ -->
+  <div id="scanView" class="view">
+
+    <div class="scan-header">
+      <div class="sh-left">
+        <span class="sh-icon g">✦</span>
+        <span class="sh-title">SENTINEL</span>
+      </div>
+      <span id="scanUser" class="sh-user c"></span>
+      <button class="btn-logout" onclick="logout()">✕ &nbsp;LOGOUT</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-pill cpu-pill">
+        <span class="sp-label c">CPU</span>
+        <div class="sp-track"><div class="sp-fill cyan-fill" id="cpuFill"></div></div>
+        <span class="sp-val c" id="cpuVal">—</span>
+      </div>
+      <div class="stat-pill ram-pill">
+        <span class="sp-label p">RAM</span>
+        <div class="sp-track"><div class="sp-fill purple-fill" id="memFill"></div></div>
+        <span class="sp-val p" id="memVal">—</span>
+      </div>
+      <div class="stat-pill thr-pill">
+        <span class="sp-label a">THREAT</span>
+        <span class="sp-val g" id="threatNum">LOW</span>
+      </div>
+    </div>
+
+    <div class="card scan-card">
+      <div class="card-rainbow"></div>
+      <div class="card-topbar">
+        <span class="dot dr"></span><span class="dot da"></span><span class="dot dg"></span>
+        <span class="topbar-title">FILE_SCANNER v2.1</span>
+        <div class="sig"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="card-body">
+
+        <div class="drop-zone" id="dropZone"
+             ondragover="dov(event)" ondragleave="dol()" ondrop="dof(event)">
+          <input type="file" id="fileInput" onchange="filePicked(this)">
+          <div id="dropDefault">
+            <div class="drop-icons">
+              <span class="di g">⬡</span>
+              <span class="di c">⬡</span>
+              <span class="di p">⬡</span>
+            </div>
+            <p class="drop-main">DROP FILE OR CLICK TO SELECT</p>
+            <p class="drop-hint">Supports any file type · YARA + AI Analysis</p>
+          </div>
+          <div id="dropChosen" style="display:none">
+            <div class="chosen-row">
+              <span class="cr-icon g">▸</span>
+              <div class="cr-info">
+                <div class="cr-name g" id="cName"></div>
+                <div class="cr-size" id="cSize"></div>
+              </div>
+              <button class="btn-clear" onclick="clearFile(event)">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-submit btn-green" id="scanBtn" onclick="scanFile()">
+          <span id="scanLbl">⟳ &nbsp;SCAN FILE</span>
+        </button>
+
+        <div class="prog-wrap" id="scanProg" style="display:none">
+          <div class="prog-track"><div class="prog-fill"></div></div>
+          <span class="prog-label">Analysing binary…</span>
+        </div>
+
+        <div id="result" class="msg"></div>
+
+        <div id="resultDetail" class="detail-panel" style="display:none">
+          <div class="dp-header">
+            <span class="g">◆</span> SCAN REPORT <span class="p">◆</span>
+          </div>
+          <div class="dp-body">
+            <div class="dp-row"><span class="dk">FILE</span><span class="dv" id="dFile"></span></div>
+            <div class="dp-row"><span class="dk">SHA-256</span><span class="dv mono" id="dHash"></span></div>
+            <div class="dp-row"><span class="dk">YARA RULES</span><span class="dv" id="dYara"></span></div>
+            <div class="dp-row"><span class="dk">AI ENGINE</span><span class="dv" id="dAi"></span></div>
+            <div class="dp-row"><span class="dk">CONFIDENCE</span><span class="dv" id="dConf"></span></div>
+            <div class="dp-row"><span class="dk">VERDICT</span><span class="dv" id="dThreat"></span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /scanView -->
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>
